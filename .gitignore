@@ -1,0 +1,25 @@
+# Maxfiy kalitlar - hech qachon git ga yuklanmaydi!
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Build
+dist/
+build/
+*.spec
+
+# Telegram sessiya
+memory/*.session
+memory/*.session-journal
+
+# Vaqtinchalik
+*.log
+.DS_Store
+workspace/*.mp4
+workspace/*.pptx

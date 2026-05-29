@@ -44,6 +44,7 @@ python -m pip install Pillow              --quiet
 python -m pip install Telethon            --quiet
 python -m pip install SpeechRecognition   --quiet
 python -m pip install pywebview           --quiet
+python -m pip install python-pptx          --quiet
 
 :: ── 4. Tekshirish ─────────────────────────────────
 echo [4/4] Tekshirilmoqda...
@@ -63,13 +64,19 @@ if errorlevel 1 (
 if not exist "workspace" mkdir workspace
 if not exist "memory"    mkdir memory
 
-:: ── 7. .env tekshirish ────────────────────────────
+:: ── 7. .env tekshirish (yo'q bo'lsa avto-yaratish) ─
 if not exist ".env" (
+    echo [INFO] .env topilmadi - shablondan yaratilmoqda...
+    copy ".env.example" ".env" >nul
     echo.
-    echo [XATO] .env fayli topilmadi!
-    echo        .env.example faylini .env ga nusxa oling
+    echo ================================================
+    echo  [DIQQAT] .env fayli yaratildi!
+    echo  Notepad bilan .env ni oching va GEMINI_API_KEY ni
+    echo  to'ldiring: https://aistudio.google.com/app/apikey
+    echo ================================================
+    echo.
+    notepad .env
     pause
-    exit /b 1
 )
 
 :: ── 8. Desktop dastur ishga tushirish ─────────────

@@ -130,3 +130,91 @@ def kill_process(pid: int) -> dict:
         return {"success": False, "error": f"Jarayon {pid} topilmadi"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+
+def clean_junk_files(dry_run: bool = True) -> dict:
+    """
+    Keraksiz vaqtinchalik (temp/cache) fayllarni tozalaydi.
+    XAVFSIZ: faqat tizimning temp papkalarini tegadi, shaxsiy fayllarga tegmaydi.
+    dry_run=True bo'lsa - faqat hisoblaydi, o'chirmaydi (avval ko'rsatadi).
+    dry_run=False bo'lsa - haqiqatan o'chiradi.
+    """
+    import tempfile
+    import glob as _glob
+
+    try:
+        targets = []
+        system = platform.system()
+        home = os.path.expanduser("~")
+
+        # Xavfsiz temp papkalar
+        targets.append(tempfile.gettempdir())
+        if system == "Windows":
+            targets += [
+                os.path.join(home, "AppData", "Local", "Temp"),
+                os.environ.get("TEMP", ""),
+                os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Temp"),
+            ]
+        else:
+            targets += ["/tmp", os.path.join(home, ".cache")]
+
+        targets = [t for t in targets if t and os.path.isdir(t)]
+        targets = list(dict.fromkeys(targets))  # dublikatlarni olib tashlash
+
+        total_size = 0
+        total_count = 0
+        deleted = 0
+        errors = 0
+        cutoff = None  # hammasi
+
+        for tdir in targets:
+            for entry in _glob.glob(os.path.join(tdir, "*")):
+                try:
+                    if os.path.isfile(entry):
+                        sz = os.path.getsize(entry)
+                    elif os.path.isdir(entry):
+                        sz = sum(
+                            os.path.getsize(os.path.join(r, f))
+                            for r, _, fs in os.walk(entry) for f in fs
+                            if os.path.exists(os.path.join(r, f))
+                        )
+                    else:
+                        continue
+                    total_size += sz
+                    total_count += 1
+
+                    if not dry_run:
+                        try:
+                            if os.path.isfile(entry):
+                                os.remove(entry)
+                            else:
+                                import shutil as _sh
+                                _sh.rmtree(entry, ignore_errors=True)
+                            deleted += 1
+                        except (PermissionError, OSError):
+                            errors += 1  # ishlatilayotgan fayllar
+                except (OSError, PermissionError):
+                    errors += 1
+                    continue
+
+        mb = total_size / (1024 * 1024)
+        if dry_run:
+            return {
+                "success": True,
+                "mode": "tekshiruv (o'chirilmadi)",
+                "papkalar": targets,
+                "topilgan_fayllar": total_count,
+                "bo'shatish_mumkin": f"{mb:.1f} MB",
+                "izoh": f"{mb:.1f} MB keraksiz fayl topildi. O'chirish uchun dry_run=False bilan qayta chaqiring.",
+            }
+        return {
+            "success": True,
+            "mode": "tozalandi",
+            "o'chirilgan": deleted,
+            "bo'shatildi": f"{mb:.1f} MB",
+            "o'tkazib_yuborilgan": errors,
+            "izoh": f"✅ {deleted} ta element o'chirildi, ~{mb:.1f} MB bo'shatildi. ({errors} ta band fayl o'tkazib yuborildi)",
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}

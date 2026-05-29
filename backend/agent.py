@@ -10,10 +10,10 @@ import google.generativeai as genai
 
 from tools.file_tools import (
     read_file, write_file, delete_file_tool, list_files,
-    create_folder, copy_file, move_file, search_in_files
+    create_folder, copy_file, move_file, search_in_files, list_files_by_date
 )
 from tools.system_tools import (
-    get_system_info, run_command, install_package, get_processes
+    get_system_info, run_command, install_package, get_processes, clean_junk_files
 )
 from tools.code_tools import (
     analyze_code, generate_code, run_python_code
@@ -31,6 +31,7 @@ from tools.remotion_tools import (
     render_text_video, render_slideshow,
     open_remotion_studio, list_rendered_videos
 )
+from tools.presentation_tools import create_presentation, list_presentations
 
 SYSTEM_PROMPT = """Sen Jarvis — aqlli va qobiliyatli O'zbek AI agentisin.
 
@@ -66,7 +67,10 @@ MUHIM ESLATMALAR:
 - Google/YouTube qidiruv natijalarini olish: browser_search_and_get ishlat
 - Video render qilish: render_text_video ishlat
 - Slayd video: render_slideshow ishlat
-- Remotion Studio ochish: open_remotion_studio ishlat"""
+- Remotion Studio ochish: open_remotion_studio ishlat
+- "Bugungi/kechagi fayllar" so'ralganda: list_files_by_date ishlat
+- "Keraksiz fayllarni tozala" so'ralganda: clean_junk_files (avval dry_run=True, ko'rsatib, keyin dry_run=False)
+- Prezentatsiya/taqdimot so'ralganda: create_presentation ishlat - slaydlarni o'zing to'liq mazmun bilan to'ldir"""
 
 
 
@@ -306,6 +310,43 @@ TOOL_DECLARATIONS = [genai.protos.Tool(function_declarations=[
         parameters=_obj({})
     ),
 
+    # ── SANA BO'YICHA FAYLLAR ─────────────────────────────────────────────────
+    genai.protos.FunctionDeclaration(
+        name="list_files_by_date",
+        description="Sana bo'yicha fayllarni topadi (o'zgartirilgan vaqti bo'yicha). Bugun/kecha/oxirgi hafta yaratilgan yoki o'zgartirilgan fayllarni ko'rsatadi.",
+        parameters=_obj({
+            "when": _str("Davr: today (bugun), yesterday (kecha), week (oxirgi hafta)"),
+            "folder": _str("Qidirish papkasi (ixtiyoriy, bo'sh bo'lsa asosiy papkalar)"),
+            "extension": _str("Faqat shu kengaytma, masalan .pdf .jpg (ixtiyoriy)")
+        })
+    ),
+
+    # ── KERAKSIZ FAYLLARNI TOZALASH ───────────────────────────────────────────
+    genai.protos.FunctionDeclaration(
+        name="clean_junk_files",
+        description="Keraksiz vaqtinchalik (temp/cache) fayllarni tozalaydi. XAVFSIZ - faqat tizim temp papkalari. Avval dry_run=True bilan hisoblang, keyin dry_run=False bilan o'chiring.",
+        parameters=_obj({
+            "dry_run": _bool("True - faqat hisoblaydi (o'chirmaydi), False - haqiqatan o'chiradi")
+        })
+    ),
+
+    # ── PREZENTATSIYA YARATISH ────────────────────────────────────────────────
+    genai.protos.FunctionDeclaration(
+        name="create_presentation",
+        description="Professional PowerPoint (.pptx) prezentatsiya yaratadi. Slaydlarni mavzu bo'yicha to'ldiradi.",
+        parameters=_obj({
+            "title": _str("Prezentatsiya sarlavhasi"),
+            "slides": _str("Slaydlar JSON ro'yxati: [{\"heading\":\"Sarlavha\",\"points\":[\"fikr1\",\"fikr2\"]}]"),
+            "output_filename": _str("Fayl nomi (masalan: taqdimot.pptx)"),
+            "theme": _str("Dizayn: dark, light, ocean, sunset, emerald")
+        }, ["title", "slides"])
+    ),
+    genai.protos.FunctionDeclaration(
+        name="list_presentations",
+        description="Yaratilgan prezentatsiyalar ro'yxatini ko'rsatadi",
+        parameters=_obj({})
+    ),
+
 ])]
 
 
@@ -358,77 +399,192 @@ TOOL_MAP = {
     "render_slideshow":     render_slideshow,
     "open_remotion_studio": open_remotion_studio,
     "list_rendered_videos": list_rendered_videos,
+    # Sana bo'yicha fayllar
+    "list_files_by_date":   list_files_by_date,
+    # Keraksiz fayllarni tozalash
+    "clean_junk_files":     clean_junk_files,
+    # Prezentatsiya
+    "create_presentation":  create_presentation,
+    "list_presentations":   list_presentations,
 }
 
 
 # ─── JARVIS AGENT KLASSI ──────────────────────────────────────────────────────
 
 # Sinab ko'riladigan modellar (yangi → eski tartibda)
-# Birinchi ishlaydigani tanlanadi
+# Birinchi ishlaydigani tanlanadi. Har bir modelda alohida bepul kvota bor.
 CANDIDATE_MODELS = [
+    "gemini-3.5-flash",        # so'ralgan (mavjud bo'lsa)
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
     "gemini-2.0-flash",
     "gemini-2.0-flash-001",
-    "gemini-2.5-flash",
     "gemini-flash-latest",
     "gemini-1.5-flash-latest",
     "gemini-1.5-flash",
-    "gemini-pro-latest",
+    "gemini-1.5-flash-8b",
 ]
 
 
-def _pick_working_model() -> str:
-    """Mavjud modellardan ishlaydiganini avtomatik tanlaydi"""
-    # .env da aniq model ko'rsatilgan bo'lsa, o'shani ishlatamiz
-    env_model = os.getenv("GEMINI_MODEL", "").strip()
-    if env_model:
-        return env_model
+def _load_api_keys() -> list:
+    """.env dan barcha API kalitlarni yig'adi (primary + zaxira)"""
+    keys = []
+    for var in ("GEMINI_API_KEY", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3"):
+        val = os.getenv(var, "").strip()
+        if val and val not in keys and "your_" not in val:
+            keys.append(val)
+    return keys
 
-    # API dan mavjud modellar ro'yxatini olishga harakat
+
+def _list_available_models() -> list:
+    """API dan generateContent qo'llab-quvvatlaydigan modellar ro'yxati"""
     try:
         available = []
         for m in genai.list_models():
             if "generateContent" in getattr(m, "supported_generation_methods", []):
-                # "models/gemini-2.0-flash" → "gemini-2.0-flash"
                 available.append(m.name.replace("models/", ""))
-
-        # Nomzodlar ichidan birinchi mavjudini tanlash
-        for cand in CANDIDATE_MODELS:
-            if cand in available:
-                print(f"[Gemini] Model tanlandi: {cand}")
-                return cand
-
-        # Nomzod topilmasa, ro'yxatdagi birinchi flash modelni olish
-        for name in available:
-            if "flash" in name:
-                print(f"[Gemini] Model tanlandi (avto): {name}")
-                return name
-        if available:
-            print(f"[Gemini] Model tanlandi (birinchi): {available[0]}")
-            return available[0]
+        return available
     except Exception as e:
         print(f"[Gemini] Model ro'yxatini olishda xato: {e}")
+        return []
 
-    # Hech narsa ishlamasa, eng keng tarqalganini qaytarish
+
+def _pick_working_model() -> str:
+    """Mavjud modellardan ishlaydiganini avtomatik tanlaydi (validatsiya bilan)"""
+    available = _list_available_models()
+    env_model = os.getenv("GEMINI_MODEL", "").strip()
+
+    # .env da model ko'rsatilgan va u haqiqatan mavjud bo'lsa — o'shani ishlat
+    if env_model:
+        if not available or env_model in available:
+            print(f"[Gemini] Model (.env): {env_model}")
+            return env_model
+        print(f"[Gemini] '{env_model}' mavjud emas, avtomatik tanlanmoqda...")
+
+    # Nomzodlar ichidan birinchi mavjudini tanlash
+    for cand in CANDIDATE_MODELS:
+        if not available or cand in available:
+            if available:
+                print(f"[Gemini] Model tanlandi: {cand}")
+                return cand
+    # Ro'yxatdan flash modelni topish
+    for name in available:
+        if "flash" in name:
+            print(f"[Gemini] Model tanlandi (avto): {name}")
+            return name
+    if available:
+        return available[0]
     return "gemini-2.0-flash"
 
 
 class JarvisAgent:
     def __init__(self):
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
+        self.api_keys = _load_api_keys()
+        if not self.api_keys:
             raise ValueError("GEMINI_API_KEY topilmadi! .env faylini tekshiring.")
-        genai.configure(api_key=api_key)
+        self.key_idx = 0
+        genai.configure(api_key=self.api_keys[self.key_idx])
 
         self.model_name = _pick_working_model()
+        # 429 bo'lsa almashish uchun zaxira modellar ro'yxati
+        self.fallback_models = [m for m in CANDIDATE_MODELS if m != self.model_name]
+        self._build_model(self.model_name)
+        self.chat = self.model.start_chat(history=[])
+
+    def _build_model(self, name):
         self.model = genai.GenerativeModel(
-            model_name=self.model_name,
+            model_name=name,
             tools=TOOL_DECLARATIONS,
             system_instruction=SYSTEM_PROMPT
         )
-        self.chat = self.model.start_chat(history=[])
 
     def reset_conversation(self):
         self.chat = self.model.start_chat(history=[])
+
+    def _rebuild_with_model(self, new_model_name: str):
+        """Modelni almashtiradi, suhbat tarixini saqlab qoladi"""
+        try:
+            history = self.chat.history
+        except Exception:
+            history = []
+        self.model_name = new_model_name
+        self._build_model(new_model_name)
+        self.chat = self.model.start_chat(history=history)
+        print(f"[Gemini] Modelga o'tildi: {new_model_name}")
+
+    def _switch_api_key(self) -> bool:
+        """Keyingi API kalitga o'tadi. Muvaffaqiyatli bo'lsa True."""
+        if self.key_idx + 1 >= len(self.api_keys):
+            return False
+        try:
+            history = self.chat.history
+        except Exception:
+            history = []
+        self.key_idx += 1
+        genai.configure(api_key=self.api_keys[self.key_idx])
+        self._build_model(self.model_name)
+        self.chat = self.model.start_chat(history=history)
+        print(f"[Gemini] Zaxira API kalitga o'tildi (#{self.key_idx + 1})")
+        return True
+
+    async def _send(self, message, on_step=None):
+        """
+        Xabar yuboradi. Xatolarda avtomatik tiklanadi:
+        1. 429/quota yoki 404 → boshqa modelga o'tadi (har modelda alohida kvota)
+        2. Barcha modellar tugasa → zaxira API kalitga o'tadi
+        3. Hammasi tugasa → biroz kutib qayta urinadi
+        """
+        import re as _re
+        tried_models = []
+        max_attempts = (len(self.fallback_models) + 2) * max(1, len(self.api_keys)) + 2
+        for attempt in range(max_attempts):
+            try:
+                return await asyncio.to_thread(self.chat.send_message, message)
+            except Exception as e:
+                err = str(e)
+                low = err.lower()
+                is_quota = "429" in err or "quota" in low or "exhausted" in low or "resource" in low
+                is_notfound = "404" in err or "not found" in low or "not supported" in low
+                if not (is_quota or is_notfound):
+                    raise  # boshqa xato (masalan auth) — yuqoriga uzatamiz
+
+                tried_models.append(self.model_name)
+                next_model = next((m for m in self.fallback_models if m not in tried_models), None)
+
+                if next_model:
+                    if on_step:
+                        msg = "topilmadi" if is_notfound else "kvota tugadi"
+                        await on_step(f"⚠️ {self.model_name} {msg}, {next_model} ga o'tilmoqda...")
+                    self._rebuild_with_model(next_model)
+                    continue
+
+                # Barcha modellar tugagan → zaxira kalitga o'tish
+                if self._switch_api_key():
+                    if on_step:
+                        await on_step("🔑 Zaxira API kalitga o'tilmoqda...")
+                    tried_models = []
+                    self._rebuild_with_model(CANDIDATE_MODELS[0])
+                    self.fallback_models = [m for m in CANDIDATE_MODELS if m != self.model_name]
+                    continue
+
+                # Kalitlar ham tugadi — kutish
+                if is_quota:
+                    m = _re.search(r"retry.*?(\d+)", err)
+                    wait = min(int(m.group(1)) if m else 30, 60)
+                    if on_step:
+                        await on_step(f"⏳ Barcha kalitlar band. {wait}s kutilmoqda...")
+                    await asyncio.sleep(wait)
+                    tried_models = []
+                    self.key_idx = 0
+                    genai.configure(api_key=self.api_keys[0])
+                    self._rebuild_with_model(CANDIDATE_MODELS[0])
+                    self.fallback_models = [m for m in CANDIDATE_MODELS if m != self.model_name]
+                else:
+                    break
+        raise RuntimeError(
+            "Barcha Gemini modellari va kalitlarining kvotasi tugagan yoki model topilmadi. "
+            "Iltimos bir necha daqiqa kuting yoki yangi API kalit kiriting."
+        )
 
     async def think_and_act(self, user_message: str, on_step=None) -> str:
         """
@@ -438,8 +594,8 @@ class JarvisAgent:
         max_iterations = 10
         iteration = 0
 
-        # Foydalanuvchi xabarini yubor
-        response = await asyncio.to_thread(self.chat.send_message, user_message)
+        # Foydalanuvchi xabarini yubor (429 da avtomatik model almashadi)
+        response = await self._send(user_message, on_step=on_step)
 
         while iteration < max_iterations:
             iteration += 1
@@ -491,6 +647,10 @@ class JarvisAgent:
                         "render_slideshow":     "🎞️ Slaydshow render qilinmoqda...",
                         "open_remotion_studio": "🎨 Remotion Studio ochilmoqda...",
                         "list_rendered_videos": "📹 Videolar ro'yxati olinmoqda...",
+                        "list_files_by_date":   "🗓️ Sana bo'yicha fayllar qidirilmoqda...",
+                        "clean_junk_files":     "🧹 Keraksiz fayllar tozalanmoqda...",
+                        "create_presentation":  "📊 Prezentatsiya tayyorlanmoqda...",
+                        "list_presentations":   "📑 Prezentatsiyalar ro'yxati...",
                     }
                     label = step_labels.get(func_name, f"🔧 {func_name} bajarilmoqda...")
                     await on_step(label)

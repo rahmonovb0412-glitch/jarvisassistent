@@ -177,3 +177,81 @@ def search_in_files(query: str, path: str = None) -> dict:
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+
+def list_files_by_date(when: str = "today", folder: str = None, extension: str = None) -> dict:
+    """
+    Sana bo'yicha fayllarni topadi (o'zgartirilgan vaqti bo'yicha).
+    when: 'today' (bugun), 'yesterday' (kecha), 'week' (oxirgi 7 kun)
+    folder: qidirish papkasi (bo'sh bo'lsa - butun foydalanuvchi papkasi)
+    extension: faqat shu kengaytma (masalan '.pdf', '.jpg')
+    """
+    import time
+    from datetime import datetime, timedelta
+
+    try:
+        now = datetime.now()
+        if when == "yesterday":
+            start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif when == "week":
+            start = now - timedelta(days=7)
+            end = now + timedelta(days=1)
+        else:  # today
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now + timedelta(days=1)
+
+        start_ts, end_ts = start.timestamp(), end.timestamp()
+
+        # Qidirish papkasi - ko'rsatilmasa, foydalanuvchi asosiy papkalari
+        if folder:
+            search_dirs = [_safe_path(folder)]
+        else:
+            home = os.path.expanduser("~")
+            search_dirs = [
+                os.path.join(home, "Desktop"),
+                os.path.join(home, "Downloads"),
+                os.path.join(home, "Documents"),
+                os.path.join(home, "Pictures"),
+                WORKSPACE,
+            ]
+
+        results = []
+        for d in search_dirs:
+            if not os.path.isdir(d):
+                continue
+            for root, dirs, files in os.walk(d):
+                dirs[:] = [x for x in dirs if not x.startswith('.')]
+                # Juda chuqur ketmaslik uchun
+                if root[len(d):].count(os.sep) > 3:
+                    dirs[:] = []
+                    continue
+                for fname in files:
+                    if extension and not fname.lower().endswith(extension.lower()):
+                        continue
+                    fpath = os.path.join(root, fname)
+                    try:
+                        mtime = os.path.getmtime(fpath)
+                        if start_ts <= mtime < end_ts:
+                            results.append({
+                                "name": fname,
+                                "folder": root,
+                                "size": f"{os.path.getsize(fpath)//1024} KB",
+                                "time": datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M"),
+                            })
+                    except OSError:
+                        continue
+            if len(results) > 200:
+                break
+
+        results.sort(key=lambda x: x["time"], reverse=True)
+        label = {"today": "bugun", "yesterday": "kecha", "week": "oxirgi hafta"}.get(when, when)
+        return {
+            "success": True,
+            "period": label,
+            "found": len(results),
+            "files": results[:80],
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}

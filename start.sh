@@ -41,6 +41,7 @@ pip3 install Telethon==1.36.0 -q
 pip3 install SpeechRecognition==3.10.4 -q
 pip3 install playwright==1.44.0 -q
 pip3 install pywebview==5.1 -q
+pip3 install python-pptx==0.6.23 -q
 
 echo "[3.5/4] Playwright brauzer o'rnatilmoqda (bir marta)..."
 python3 -m playwright install chromium 2>/dev/null && echo "    [OK] Playwright tayyor!" || echo "    [SKIP] Playwright o'rnatilmadi (ixtiyoriy)"
@@ -63,6 +64,15 @@ else
 fi
 
 mkdir -p workspace memory
+
+# .env yo'q bo'lsa shablondan yaratish
+if [ ! -f ".env" ]; then
+    echo "[INFO] .env topilmadi - shablondan yaratilmoqda..."
+    cp ".env.example" ".env"
+    echo "[DIQQAT] .env yaratildi! GEMINI_API_KEY ni to'ldiring:"
+    echo "         https://aistudio.google.com/app/apikey"
+    echo "         Fayl: $(pwd)/.env"
+fi
 
 echo ""
 echo "================================================"
