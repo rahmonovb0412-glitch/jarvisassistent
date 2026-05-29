@@ -8,85 +8,79 @@ echo        JARVIS AGENT - O'ZBEK AI v2.0
 echo ================================================
 echo.
 
-:: Python borligini tekshirish
+:: ── 1. Python tekshirish ─────────────────────────
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [XATO] Python topilmadi!
-    echo Python ni https://python.org dan yuklab o'rnating
+    echo        https://python.org/downloads dan yuklab ornatib qaytadan ishga tushiring
+    pause
+    exit /b 1
+)
+for /f "tokens=*" %%v in ('python --version 2^>^&1') do echo [OK] %%v
+
+:: ── 2. pip yangilash ─────────────────────────────
+echo.
+echo [1/4] pip yangilanmoqda...
+python -m pip install --upgrade pip --quiet 2>nul
+
+:: ── 3. Paketlar (alohida-alohida) ────────────────
+echo [2/4] Asosiy paketlar...
+python -m pip install fastapi          --quiet
+python -m pip install uvicorn          --quiet
+python -m pip install python-multipart --quiet
+python -m pip install websockets       --quiet
+python -m pip install aiofiles         --quiet
+python -m pip install httpx            --quiet
+python -m pip install requests         --quiet
+
+echo [3/4] AI va qoshimcha paketlar...
+python -m pip install google-generativeai --quiet
+python -m pip install gTTS                --quiet
+python -m pip install pydub               --quiet
+python -m pip install psutil              --quiet
+python -m pip install python-dotenv       --quiet
+python -m pip install pydantic            --quiet
+python -m pip install Pillow              --quiet
+python -m pip install Telethon            --quiet
+python -m pip install SpeechRecognition   --quiet
+
+:: ── 4. Tekshirish ─────────────────────────────────
+echo [4/4] Tekshirilmoqda...
+python -c "import fastapi, uvicorn, aiofiles, psutil, dotenv; print('[OK] Asosiy paketlar tayyor!')"
+
+:: ── 5. Node.js (Remotion uchun, ixtiyoriy) ────────
+echo.
+node --version >nul 2>&1
+if errorlevel 1 (
+    echo [INFO] Node.js topilmadi - video render ishlamaydi
+    echo        https://nodejs.org dan LTS yuklab ornatish mumkin
+) else (
+    for /f "tokens=*" %%v in ('node --version') do echo [OK] Node.js %%v
+)
+
+:: ── 6. Papkalar ───────────────────────────────────
+if not exist "workspace" mkdir workspace
+if not exist "memory"    mkdir memory
+
+:: ── 7. .env tekshirish ────────────────────────────
+if not exist ".env" (
+    echo.
+    echo [XATO] .env fayli topilmadi!
+    echo        .env.example faylini .env ga nusxa oling
     pause
     exit /b 1
 )
 
-:: pip ni yangilash
-echo [1/4] pip yangilanmoqda...
-python -m pip install --upgrade pip -q
-
-:: Har birini alohida o'rnatish (xato chiqsa ham davom etadi)
-echo [2/4] Asosiy paketlar o'rnatilmoqda...
-pip install fastapi==0.111.0 -q
-pip install "uvicorn[standard]==0.30.1" -q
-pip install python-multipart==0.0.9 -q
-pip install websockets==12.0 -q
-pip install aiofiles==23.2.1 -q
-pip install httpx==0.27.0 -q
-pip install requests==2.32.3 -q
-
-echo [3/4] AI va qo'shimcha paketlar...
-pip install google-generativeai==0.7.2 -q
-pip install gTTS==2.5.1 -q
-pip install pydub==0.25.1 -q
-pip install psutil==5.9.8 -q
-pip install python-dotenv==1.0.1 -q
-pip install pydantic==2.7.4 -q
-pip install Pillow==10.3.0 -q
-pip install Telethon==1.36.0 -q
-pip install SpeechRecognition==3.10.4 -q
-pip install playwright==1.44.0 -q
-
-echo [3.5/4] Playwright brauzer o'rnatilmoqda (bir marta)...
-playwright install chromium 2>nul
-if errorlevel 1 (
-    python -m playwright install chromium 2>nul
-)
-echo     [OK] Playwright tayyor!
-
-echo [4/4] Tekshirilmoqda...
-python -c "import fastapi, uvicorn, aiofiles, google.generativeai, gtts, psutil, dotenv; print('[OK] Barcha paketlar tayyor!')"
-if errorlevel 1 (
-    echo [OGOHLANTIRISH] Ayrim paketlar yuklanmagan bo'lishi mumkin
-)
-
-:: Node.js tekshirish (Remotion uchun)
-echo [Node.js] Tekshirilmoqda...
-node --version >nul 2>&1
-if errorlevel 1 (
-    echo [OGOHLANTIRISH] Node.js topilmadi!
-    echo   Remotion video render ishlashi uchun Node.js kerak.
-    echo   https://nodejs.org dan yuklab o'rnating ^(LTS versiya^)
-    echo   Jarvis Node.js siz ham ishlaveradi, faqat video render bo'lmaydi.
-    echo.
-) else (
-    for /f "tokens=*" %%v in ('node --version') do echo [OK] Node.js %%v topildi
-    :: npx va remotion o'rnatish
-    echo [Node] Remotion o'rnatilmoqda...
-    npm install -g @remotion/cli >nul 2>&1
-    echo [OK] Remotion tayyor!
-)
-
-:: workspace papkasi yaratish
-if not exist "workspace" mkdir workspace
-if not exist "memory" mkdir memory
-
+:: ── 8. Ishga tushirish ────────────────────────────
 echo.
 echo ================================================
 echo  Jarvis ishga tushmoqda...
 echo  Brauzer: http://localhost:8000
-echo  Toxtatish uchun: Ctrl+C
+echo  Toxtatish: Ctrl+C
 echo ================================================
 echo.
 
 python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
 echo.
-echo Jarvis toxtatildi.
 pause
