@@ -43,6 +43,7 @@ python -m pip install pydantic            --quiet
 python -m pip install Pillow              --quiet
 python -m pip install Telethon            --quiet
 python -m pip install SpeechRecognition   --quiet
+python -m pip install pywebview           --quiet
 
 :: ── 4. Tekshirish ─────────────────────────────────
 echo [4/4] Tekshirilmoqda...
@@ -71,16 +72,15 @@ if not exist ".env" (
     exit /b 1
 )
 
-:: ── 8. Ishga tushirish ────────────────────────────
+:: ── 8. Desktop dastur ishga tushirish ─────────────
 echo.
 echo ================================================
-echo  Jarvis ishga tushmoqda...
-echo  Brauzer: http://localhost:8000
-echo  Toxtatish: Ctrl+C
+echo  Jarvis desktop dasturi ochilmoqda...
+echo  (Alohida oyna ochiladi, terminal yopilmasin)
 echo ================================================
 echo.
 
-python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+python app.py
 
 echo.
 pause

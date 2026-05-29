@@ -40,6 +40,7 @@ pip3 install Pillow==10.3.0 -q
 pip3 install Telethon==1.36.0 -q
 pip3 install SpeechRecognition==3.10.4 -q
 pip3 install playwright==1.44.0 -q
+pip3 install pywebview==5.1 -q
 
 echo "[3.5/4] Playwright brauzer o'rnatilmoqda (bir marta)..."
 python3 -m playwright install chromium 2>/dev/null && echo "    [OK] Playwright tayyor!" || echo "    [SKIP] Playwright o'rnatilmadi (ixtiyoriy)"
@@ -65,10 +66,9 @@ mkdir -p workspace memory
 
 echo ""
 echo "================================================"
-echo " Jarvis ishga tushmoqda..."
-echo " Brauzer: http://localhost:8000"
-echo " Toxtatish: Ctrl+C"
+echo " Jarvis desktop dasturi ochilmoqda..."
+echo " (Alohida oyna ochiladi)"
 echo "================================================"
 echo ""
 
-python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+python3 app.py

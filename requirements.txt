@@ -39,3 +39,14 @@ SpeechRecognition==3.10.4
 # ─── BROWSER AUTOMATION ────────────────────────────────────
 # pip install playwright && playwright install chromium
 playwright==1.44.0
+
+
+# ─── DESKTOP APP (alohida oyna) ────────────────────────────
+# Native desktop oyna - terminal emas!
+pywebview==5.1
+# Windows uchun WebView2 backend
+pythonnet==3.0.3; sys_platform == 'win32'
+
+# ─── .EXE QURISH (ixtiyoriy) ───────────────────────────────
+# pyinstaller --noconsole --onefile app.py
+pyinstaller==6.8.0
