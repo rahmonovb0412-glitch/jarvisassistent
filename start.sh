@@ -30,7 +30,7 @@ pip3 install httpx==0.27.0 -q
 pip3 install requests==2.32.3 -q
 
 echo "[3/4] AI va qo'shimcha paketlar..."
-pip3 install google-generativeai==0.7.2 -q
+pip3 install --upgrade google-generativeai -q
 pip3 install gTTS==2.5.1 -q
 pip3 install pydub==0.25.1 -q
 pip3 install psutil==5.9.8 -q

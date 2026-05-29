@@ -34,7 +34,7 @@ python -m pip install httpx            --quiet
 python -m pip install requests         --quiet
 
 echo [3/4] AI va qoshimcha paketlar...
-python -m pip install google-generativeai --quiet
+python -m pip install --upgrade google-generativeai --quiet
 python -m pip install gTTS                --quiet
 python -m pip install pydub               --quiet
 python -m pip install psutil              --quiet

@@ -363,14 +363,65 @@ TOOL_MAP = {
 
 # ─── JARVIS AGENT KLASSI ──────────────────────────────────────────────────────
 
+# Sinab ko'riladigan modellar (yangi → eski tartibda)
+# Birinchi ishlaydigani tanlanadi
+CANDIDATE_MODELS = [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-001",
+    "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash",
+    "gemini-pro-latest",
+]
+
+
+def _pick_working_model() -> str:
+    """Mavjud modellardan ishlaydiganini avtomatik tanlaydi"""
+    # .env da aniq model ko'rsatilgan bo'lsa, o'shani ishlatamiz
+    env_model = os.getenv("GEMINI_MODEL", "").strip()
+    if env_model:
+        return env_model
+
+    # API dan mavjud modellar ro'yxatini olishga harakat
+    try:
+        available = []
+        for m in genai.list_models():
+            if "generateContent" in getattr(m, "supported_generation_methods", []):
+                # "models/gemini-2.0-flash" → "gemini-2.0-flash"
+                available.append(m.name.replace("models/", ""))
+
+        # Nomzodlar ichidan birinchi mavjudini tanlash
+        for cand in CANDIDATE_MODELS:
+            if cand in available:
+                print(f"[Gemini] Model tanlandi: {cand}")
+                return cand
+
+        # Nomzod topilmasa, ro'yxatdagi birinchi flash modelni olish
+        for name in available:
+            if "flash" in name:
+                print(f"[Gemini] Model tanlandi (avto): {name}")
+                return name
+        if available:
+            print(f"[Gemini] Model tanlandi (birinchi): {available[0]}")
+            return available[0]
+    except Exception as e:
+        print(f"[Gemini] Model ro'yxatini olishda xato: {e}")
+
+    # Hech narsa ishlamasa, eng keng tarqalganini qaytarish
+    return "gemini-2.0-flash"
+
+
 class JarvisAgent:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY topilmadi! .env faylini tekshiring.")
         genai.configure(api_key=api_key)
+
+        self.model_name = _pick_working_model()
         self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name=self.model_name,
             tools=TOOL_DECLARATIONS,
             system_instruction=SYSTEM_PROMPT
         )
