@@ -5,485 +5,542 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jarvis — O'zbek AI Agent</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: 'Segoe UI', Tahoma, sans-serif;
-  background: #0a0a0f;
-  color: #e0e0e0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+:root {
+  --bg: #050510;
+  --surface: rgba(255,255,255,0.04);
+  --surface2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08);
+  --accent: #4f8ef7;
+  --accent2: #00d4ff;
+  --green: #00ff88;
+  --red: #ff4466;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --radius: 16px;
 }
-/* Header */
-.header {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  border-bottom: 1px solid #0f3460;
-  box-shadow: 0 2px 20px rgba(0,120,255,0.15);
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Segoe UI',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
 }
-.logo {
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg, #0078ff, #00d4ff);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
-  box-shadow: 0 0 20px rgba(0,120,255,0.5);
-  animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0%,100% { box-shadow: 0 0 20px rgba(0,120,255,0.5); }
-  50% { box-shadow: 0 0 35px rgba(0,120,255,0.9); }
-}
-.header-info h1 { font-size: 20px; color: #00d4ff; font-weight: 700; }
-.header-info p { font-size: 12px; color: #8892b0; }
-.status-dot {
-  width: 10px; height: 10px;
-  background: #00ff88;
-  border-radius: 50%;
-  margin-left: auto;
-  box-shadow: 0 0 8px #00ff88;
-  animation: blink 1.5s infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-.btn-reset {
-  background: rgba(255,80,80,0.15);
-  border: 1px solid rgba(255,80,80,0.3);
-  color: #ff6b6b;
-  padding: 7px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-  margin-left: 10px;
-}
-.btn-reset:hover { background: rgba(255,80,80,0.3); }
-/* Chat area */
-#chat {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  scrollbar-width: thin;
-  scrollbar-color: #0f3460 transparent;
+/* Animated background */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(79,142,247,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,212,255,0.08) 0%, transparent 60%);
+  pointer-events:none;
+  z-index:0;
 }
 </style>
 </head>
 <body>
 
 
+<style>
+/* HEADER */
+.header{
+  position:relative;z-index:10;
+  background:rgba(5,5,20,0.8);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:12px 20px;
+  display:flex;align-items:center;gap:14px;
+}
+.logo{
+  width:46px;height:46px;
+  background:linear-gradient(135deg,#4f8ef7,#00d4ff);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+  box-shadow:0 0 24px rgba(79,142,247,0.5);
+  animation:logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse{
+  0%,100%{box-shadow:0 0 24px rgba(79,142,247,0.5);}
+  50%{box-shadow:0 0 40px rgba(0,212,255,0.8),0 0 80px rgba(79,142,247,0.3);}
+}
+.header-title{flex:1;}
+.header-title h1{font-size:20px;font-weight:700;
+  background:linear-gradient(90deg,#4f8ef7,#00d4ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.header-title p{font-size:11px;color:var(--muted);margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:10px;}
+.status-badge{
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px;font-size:12px;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 8px var(--green);animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.btn{
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);padding:7px 14px;border-radius:10px;
+  cursor:pointer;font-size:12px;transition:all .2s;
+  display:flex;align-items:center;gap:5px;
+}
+.btn:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);}
+.btn-danger{color:var(--red);border-color:rgba(255,68,102,0.3);}
+.btn-danger:hover{background:rgba(255,68,102,0.15);}
+
+/* TTS toggle */
+.tts-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.switch{position:relative;width:36px;height:20px;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:#1e293b;border-radius:20px;cursor:pointer;transition:.3s;}
+.slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;
+  background:#64748b;border-radius:50%;transition:.3s;}
+input:checked+.slider{background:rgba(79,142,247,0.4);border:1px solid var(--accent);}
+input:checked+.slider:before{transform:translateX(16px);background:var(--accent);}
+</style>
+
+
+<style>
+/* CHAT AREA */
+#chat{
+  flex:1;overflow-y:auto;padding:20px;
+  display:flex;flex-direction:column;gap:16px;
+  position:relative;z-index:1;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent;
+}
+#chat::-webkit-scrollbar{width:4px;}
+#chat::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px;}
+
+/* Messages */
+.msg{display:flex;gap:12px;align-items:flex-start;animation:msgIn .35s cubic-bezier(.34,1.56,.64,1);}
+@keyframes msgIn{from{opacity:0;transform:translateY(16px) scale(0.97);}to{opacity:1;transform:none;}}
+.msg-avatar{
+  width:36px;height:36px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+}
+.bot-msg .msg-avatar{background:linear-gradient(135deg,rgba(79,142,247,.2),rgba(0,212,255,.2));
+  border:1px solid rgba(79,142,247,.3);}
+.user-msg{flex-direction:row-reverse;}
+.user-msg .msg-avatar{background:linear-gradient(135deg,rgba(100,100,200,.2),rgba(79,142,247,.2));
+  border:1px solid rgba(100,100,200,.3);}
+.msg-bubble{
+  max-width:78%;
+  padding:12px 16px;border-radius:16px;line-height:1.65;font-size:14.5px;
+}
+.bot-msg .msg-bubble{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-top-left-radius:4px;color:var(--text);
+}
+.user-msg .msg-bubble{
+  background:linear-gradient(135deg,#2d4ed8,#4f8ef7);
+  border:1px solid rgba(79,142,247,.4);
+  border-top-right-radius:4px;color:#fff;
+  box-shadow:0 4px 20px rgba(79,142,247,.25);
+}
+.msg-bubble code{
+  background:rgba(0,0,0,.4);padding:2px 7px;border-radius:5px;
+  font-family:'Consolas','Courier New',monospace;font-size:13px;color:#7dd3fc;
+}
+.msg-bubble pre{
+  background:rgba(0,0,0,.5);padding:14px;border-radius:10px;
+  overflow-x:auto;margin:10px 0;border:1px solid rgba(255,255,255,.06);
+  font-size:13px;color:#a3e635;font-family:'Consolas',monospace;
+}
+/* Msg footer */
+.msg-foot{margin-top:6px;display:flex;align-items:center;gap:8px;}
+.msg-time{font-size:11px;color:var(--muted);}
+.msg-action{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11px;transition:.2s;
+}
+.msg-action:hover{background:var(--surface2);color:var(--text);}
+
+/* Audio player */
+.audio-bar{
+  margin-top:8px;background:rgba(79,142,247,.08);
+  border:1px solid rgba(79,142,247,.2);border-radius:10px;
+  padding:7px 12px;display:flex;align-items:center;gap:10px;
+}
+.play-btn{
+  width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;
+  transition:.2s;flex-shrink:0;
+}
+.play-btn:hover{transform:scale(1.1);}
+.tts-label{font-size:11px;color:rgba(79,142,247,.8);}
+audio{display:none;}
+</style>
+
+
+<style>
+/* THINKING */
+.thinking .msg-bubble{
+  background:rgba(0,0,0,.3);border:1px dashed rgba(79,142,247,.3);
+  display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;
+}
+.dots{display:flex;gap:5px;}
+.dots span{
+  width:7px;height:7px;background:var(--accent);border-radius:50%;
+  animation:bounce .9s ease-in-out infinite;
+}
+.dots span:nth-child(2){animation-delay:.15s;}
+.dots span:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-8px);}}
+
+/* STEP BAR */
+#stepBar{
+  position:relative;z-index:10;
+  background:rgba(79,142,247,.06);
+  border-top:1px solid rgba(79,142,247,.15);
+  padding:6px 20px;font-size:12px;color:rgba(79,142,247,.9);
+  display:none;align-items:center;gap:8px;
+}
+.step-spinner{
+  width:14px;height:14px;border:2px solid rgba(79,142,247,.2);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .7s linear infinite;flex-shrink:0;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* INPUT */
+.input-wrap{
+  position:relative;z-index:10;
+  background:rgba(5,5,20,.9);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);padding:14px 20px;
+}
+.input-row{
+  display:flex;align-items:flex-end;gap:10px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:8px 10px 8px 14px;
+  transition:border-color .25s,box-shadow .25s;
+}
+.input-row:focus-within{
+  border-color:rgba(79,142,247,.5);
+  box-shadow:0 0 0 3px rgba(79,142,247,.08);
+}
+#msgInput{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-size:15px;resize:none;
+  font-family:inherit;line-height:1.5;max-height:140px;
+}
+#msgInput::placeholder{color:var(--muted);}
+.ico-btn{
+  background:none;border:none;cursor:pointer;
+  width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--muted);transition:.2s;flex-shrink:0;
+}
+.ico-btn:hover{background:var(--surface2);color:var(--text);}
+#sendBtn{
+  background:linear-gradient(135deg,#2d4ed8,#4f8ef7);
+  color:#fff;border:none;width:38px;height:38px;border-radius:12px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:.2s;flex-shrink:0;
+}
+#sendBtn:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(79,142,247,.4);}
+#micBtn.recording{background:rgba(255,68,102,.15);color:var(--red);animation:micPulse 1s infinite;}
+@keyframes micPulse{0%,100%{box-shadow:none;}50%{box-shadow:0 0 0 6px rgba(255,68,102,.15);}}
+
+/* Quick commands */
+.quick-cmds{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.qcmd{
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--muted);padding:5px 11px;border-radius:20px;
+  font-size:12px;cursor:pointer;transition:.2s;white-space:nowrap;
+}
+.qcmd:hover{background:var(--surface2);color:var(--text);border-color:rgba(79,142,247,.3);}
+
+/* Scrollbar bottom shadow */
+.input-wrap::before{
+  content:'';position:absolute;top:-30px;left:0;right:0;height:30px;
+  background:linear-gradient(transparent,rgba(5,5,20,.8));pointer-events:none;
+}
+</style>
+
+
+
+<!-- HEADER -->
 <div class="header">
   <div class="logo">🤖</div>
-  <div class="header-info">
+  <div class="header-title">
     <h1>JARVIS</h1>
-    <p>O'zbek AI Agent · Har qanday vazifani bajaring</p>
+    <p>O'zbek AI Agent · Gemini + ElevenLabs</p>
   </div>
-  <div class="status-dot" id="statusDot"></div>
-  <button class="btn-reset" onclick="resetChat()">🔄 Yangi suhbat</button>
+  <div class="header-right">
+    <div class="tts-toggle">
+      🔊
+      <label class="switch">
+        <input type="checkbox" id="ttsToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="status-badge">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Ulanmoqda...</span>
+    </div>
+    <button class="btn btn-danger" onclick="resetChat()">🔄 Tozala</button>
+  </div>
 </div>
 
+<!-- CHAT -->
 <div id="chat">
   <div class="msg bot-msg">
     <div class="msg-avatar">🤖</div>
-    <div class="msg-content">
-      <div class="msg-text">
-        Salom! Men Jarvis — sizning aqlli yordamchingizman. 🇺🇿<br><br>
-        Men qila oladiganlarim:<br>
-        📁 <b>Fayllar</b> — yaratish, o'qish, o'chirish, nusxa olish<br>
-        💻 <b>Kod</b> — yozish, tahlil qilish, ishga tushirish<br>
-        ⚙️ <b>Sistema</b> — buyruqlar, paket o'rnatish, jarayonlar<br>
-        🌐 <b>Internet</b> — qidirish, ma'lumot olish<br><br>
-        Nima qilishimni xohlaysiz?
+    <div>
+      <div class="msg-bubble">
+        Salom! Men <b>Jarvis</b> — sizning aqlli yordamchingizman 🇺🇿<br><br>
+        <b>📁 Fayllar</b> — yaratish, o'qish, o'chirish, nusxa<br>
+        <b>💻 Kod</b> — yozish, tahlil, ishga tushirish<br>
+        <b>🌤️ Ob-havo</b> — istalgan shahar, bugun/ertaga<br>
+        <b>📺 YouTube</b> — video, musiqa, kino, motivatsiya<br>
+        <b>📱 Telegram</b> — xabar o'qish va yuborish<br>
+        <b>🌐 Internet</b> — qidirish, ma'lumot olish<br><br>
+        Nima qilishimni buyuring!
       </div>
+      <div class="msg-foot"><span class="msg-time" id="welcomeTime"></span></div>
     </div>
   </div>
 </div>
 
-<!-- Step indicator -->
-<div id="stepBar" style="display:none; padding:6px 20px; background:#0d1117; color:#8892b0; font-size:12px; border-top:1px solid #1a1a2e;">
-  <span id="stepText">⚙️ Bajarilmoqda...</span>
+<!-- STEP BAR -->
+<div id="stepBar">
+  <div class="step-spinner"></div>
+  <span id="stepText">Bajarilmoqda...</span>
 </div>
 
-<!-- Input area -->
-<div class="input-area">
+<!-- INPUT -->
+<div class="input-wrap">
+  <div class="quick-cmds" id="quickCmds">
+    <span class="qcmd" onclick="useCmd(this)">🌤️ Ob-havo</span>
+    <span class="qcmd" onclick="useCmd(this)">📁 Fayllarni ko'rsat</span>
+    <span class="qcmd" onclick="useCmd(this)">📺 Motivatsiya video</span>
+    <span class="qcmd" onclick="useCmd(this)">💻 Sistema ma'lumoti</span>
+    <span class="qcmd" onclick="useCmd(this)">📱 Telegram xabarlar</span>
+    <span class="qcmd" onclick="useCmd(this)">🎵 Musiqa qo'y</span>
+  </div>
   <div class="input-row">
-    <label class="file-btn" title="Fayl yuklash">
-      📎
-      <input type="file" id="fileInput" style="display:none" onchange="uploadFile(this)">
+    <label class="ico-btn" title="Fayl yuklash">
+      📎<input type="file" id="fileInput" style="display:none" onchange="uploadFile(this)">
     </label>
-    <textarea id="msgInput" placeholder="Xabar yozing yoki mikrofon tugmasini bosing..."
-      rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-    <button id="micBtn" onclick="toggleMic()" title="Ovozli xabar">🎤</button>
-    <button id="sendBtn" onclick="sendMessage()">➤</button>
+    <textarea id="msgInput" rows="1"
+      placeholder="Xabar yozing... (Enter — yuborish, Shift+Enter — yangi qator)"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="ico-btn" id="micBtn" onclick="toggleMic()" title="Ovozli xabar">🎤</button>
+    <button id="sendBtn" onclick="sendMessage()" title="Yuborish">➤</button>
   </div>
 </div>
 
-</body>
-
-
-<style>
-.msg { display:flex; gap:12px; align-items:flex-start; animation: fadeIn 0.3s ease; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-.msg-avatar {
-  width:38px; height:38px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-size:18px; flex-shrink:0;
-}
-.bot-msg .msg-avatar { background:linear-gradient(135deg,#1a1a2e,#0f3460); border:1px solid #0078ff44; }
-.user-msg { flex-direction:row-reverse; }
-.user-msg .msg-avatar { background:linear-gradient(135deg,#0078ff22,#00d4ff22); border:1px solid #00d4ff44; }
-.msg-content { max-width:75%; }
-.msg-text {
-  padding:12px 16px; border-radius:16px;
-  line-height:1.6; font-size:14.5px;
-}
-.bot-msg .msg-text {
-  background:#111827;
-  border:1px solid #1f2937;
-  border-top-left-radius:4px;
-  color:#d1d5db;
-}
-.user-msg .msg-text {
-  background:linear-gradient(135deg,#0078ff,#0056cc);
-  color:#fff;
-  border-top-right-radius:4px;
-}
-.msg-text code {
-  background:#0d1117; padding:2px 6px; border-radius:4px;
-  font-family:monospace; font-size:13px; color:#00d4ff;
-}
-.msg-text pre {
-  background:#0d1117; padding:12px; border-radius:8px;
-  overflow-x:auto; margin-top:8px; border:1px solid #1f2937;
-  font-size:13px; color:#a8ff78;
-}
-.msg-actions { margin-top:6px; display:flex; gap:8px; }
-.action-btn {
-  background:transparent; border:1px solid #1f2937;
-  color:#8892b0; padding:4px 10px; border-radius:6px;
-  cursor:pointer; font-size:12px; transition:all 0.2s;
-}
-.action-btn:hover { background:#1f2937; color:#00d4ff; }
-/* Thinking */
-.thinking-msg .msg-text {
-  background:#0d1117;
-  border:1px dashed #0f3460;
-  color:#8892b0;
-  display:flex; align-items:center; gap:8px;
-}
-.dots span {
-  display:inline-block; width:8px; height:8px;
-  background:#0078ff; border-radius:50%;
-  animation:bounce 1.2s infinite;
-}
-.dots span:nth-child(2){animation-delay:.2s}
-.dots span:nth-child(3){animation-delay:.4s}
-@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
-/* Input area */
-.input-area {
-  background:#111827;
-  border-top:1px solid #1f2937;
-  padding:14px 20px;
-}
-.input-row {
-  display:flex; align-items:flex-end; gap:10px;
-  background:#0d1117;
-  border:1px solid #1f2937;
-  border-radius:14px;
-  padding:8px 12px;
-  transition:border-color 0.2s;
-}
-.input-row:focus-within { border-color:#0078ff; }
-.file-btn {
-  font-size:20px; cursor:pointer; padding:4px 6px;
-  color:#8892b0; transition:color 0.2s; line-height:1;
-}
-.file-btn:hover { color:#00d4ff; }
-#msgInput {
-  flex:1; background:transparent; border:none;
-  color:#e0e0e0; font-size:15px; resize:none;
-  font-family:inherit; outline:none; max-height:150px;
-  line-height:1.5;
-}
-#msgInput::placeholder { color:#4b5563; }
-#micBtn, #sendBtn {
-  background:none; border:none; cursor:pointer;
-  font-size:20px; padding:4px 6px;
-  transition:transform 0.2s; line-height:1;
-  color:#8892b0;
-}
-#micBtn:hover { color:#ff6b6b; transform:scale(1.1); }
-#sendBtn { color:#0078ff; }
-#sendBtn:hover { transform:scale(1.1); }
-#micBtn.recording { color:#ff4444; animation:pulse 0.8s infinite; }
-/* Audio player */
-.audio-player {
-  margin-top:8px;
-  background:#0d1117; border:1px solid #1f2937;
-  border-radius:8px; padding:6px 12px;
-  display:flex; align-items:center; gap:10px;
-}
-.play-btn {
-  background:linear-gradient(135deg,#0078ff,#00d4ff);
-  border:none; border-radius:50%;
-  width:30px; height:30px; cursor:pointer;
-  font-size:13px; color:white;
-}
-audio { display:none; }
-</style>
 
 
 <script>
-const WS_URL = `ws://${location.hostname}:8000/ws`;
-const API_URL = `http://${location.hostname}:8000`;
-let ws = null;
-let recognition = null;
-let isRecording = false;
-let currentAudio = null;
+const WS  = `ws://${location.hostname}:8000/ws`;
+const API = `http://${location.hostname}:8000`;
+let ws = null, recognition = null, isRec = false, curAudio = null;
 
-// WebSocket ulanish
-function connect() {
-  ws = new WebSocket(WS_URL);
+// Vaqt
+function timeNow(){ return new Date().toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'}); }
+document.getElementById('welcomeTime').textContent = timeNow();
+
+// WebSocket
+function connect(){
+  ws = new WebSocket(WS);
   ws.onopen = () => {
     document.getElementById('statusDot').style.background = '#00ff88';
-    console.log('✅ Jarvis bilan ulandi');
+    document.getElementById('statusDot').style.boxShadow = '0 0 8px #00ff88';
+    document.getElementById('statusText').textContent = 'Ulandi';
   };
   ws.onclose = () => {
-    document.getElementById('statusDot').style.background = '#ff4444';
+    document.getElementById('statusDot').style.background = '#ff4466';
+    document.getElementById('statusText').textContent = 'Uzildi';
     setTimeout(connect, 3000);
   };
   ws.onerror = () => {
     document.getElementById('statusDot').style.background = '#ff8800';
+    document.getElementById('statusText').textContent = 'Xato';
   };
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    handleMessage(data);
-  };
+  ws.onmessage = e => handleMsg(JSON.parse(e.data));
 }
 
-function handleMessage(data) {
+function handleMsg(d){
   removeThinking();
-  if (data.type === 'thinking') {
-    addThinking(data.content);
-  } else if (data.type === 'step') {
-    document.getElementById('stepText').textContent = data.content;
-    document.getElementById('stepBar').style.display = 'block';
-  } else if (data.type === 'answer') {
+  if(d.type==='thinking'){ addThinking(d.content); }
+  else if(d.type==='step'){
+    document.getElementById('stepText').textContent = d.content;
+    document.getElementById('stepBar').style.display = 'flex';
+  }
+  else if(d.type==='answer'){
     document.getElementById('stepBar').style.display = 'none';
-    addBotMessage(data.content, data.audio);
-    if (data.audio) autoPlayAudio(data.audio);
-  } else if (data.type === 'error') {
+    addBot(d.content, d.audio, d.tts_source);
+    if(d.audio) autoPlay(d.audio);
+  }
+  else if(d.type==='error'){
     document.getElementById('stepBar').style.display = 'none';
-    addBotMessage('⚠️ ' + data.content, null);
+    addBot('⚠️ '+d.content, null, null);
   }
 }
 
-function sendMessage() {
-  const input = document.getElementById('msgInput');
-  const text = input.value.trim();
-  if (!text || !ws || ws.readyState !== 1) return;
-  addUserMessage(text);
-  ws.send(JSON.stringify({ message: text }));
-  input.value = '';
-  autoResize(input);
+function sendMessage(){
+  const el = document.getElementById('msgInput');
+  const txt = el.value.trim();
+  if(!txt || !ws || ws.readyState!==1) return;
+  addUser(txt);
+  ws.send(JSON.stringify({
+    message: txt,
+    tts: document.getElementById('ttsToggle').checked
+  }));
+  el.value=''; autoResize(el);
   addThinking('Jarvis fikrlamoqda...');
-  input.focus();
+  el.focus();
 }
 
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+function handleKey(e){
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+}
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,140)+'px';
 }
 
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+// Messages
+function addUser(txt){
+  const t = timeNow();
+  addMsg(`
+    <div class="msg user-msg">
+      <div class="msg-avatar">👤</div>
+      <div>
+        <div class="msg-bubble">${esc(txt)}</div>
+        <div class="msg-foot" style="justify-content:flex-end">
+          <span class="msg-time">${t}</span>
+        </div>
+      </div>
+    </div>`);
 }
 
-function addUserMessage(text) {
-  const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = 'msg user-msg';
-  div.innerHTML = `
-    <div class="msg-avatar">👤</div>
-    <div class="msg-content">
-      <div class="msg-text">${escapeHtml(text)}</div>
-    </div>`;
-  chat.appendChild(div);
-  scrollBottom();
-}
-
-function addBotMessage(text, audioBase64) {
-  const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = 'msg bot-msg';
-  const formatted = formatText(text);
+function addBot(txt, audio, src){
+  const t = timeNow();
+  const aid = 'a'+Date.now();
   let audioHtml = '';
-  if (audioBase64) {
-    const id = 'audio_' + Date.now();
-    audioHtml = `
-      <div class="audio-player">
-        <button class="play-btn" onclick="playAudio('${id}')">▶</button>
-        <span style="font-size:12px;color:#8892b0">Ovozni tinglash</span>
-        <audio id="${id}" src="data:audio/mp3;base64,${audioBase64}"></audio>
-      </div>`;
-  }
-  div.innerHTML = `
-    <div class="msg-avatar">🤖</div>
-    <div class="msg-content">
-      <div class="msg-text">${formatted}</div>
-      ${audioHtml}
-      <div class="msg-actions">
-        <button class="action-btn" onclick="copyText(this, '${encodeURIComponent(text)}')">📋 Nusxa</button>
-      </div>
+  if(audio){
+    audioHtml = `<div class="audio-bar">
+      <button class="play-btn" onclick="playAudio('${aid}')">▶</button>
+      <span class="tts-label">🔊 ${src||'TTS'} · Tinglash</span>
+      <audio id="${aid}" src="data:audio/mp3;base64,${audio}"></audio>
     </div>`;
-  chat.appendChild(div);
-  scrollBottom();
-}
-
-function addThinking(msg) {
-  removeThinking();
-  const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = 'msg bot-msg thinking-msg';
-  div.id = 'thinkingMsg';
-  div.innerHTML = `
-    <div class="msg-avatar">🤖</div>
-    <div class="msg-content">
-      <div class="msg-text">
-        <div class="dots"><span></span><span></span><span></span></div>
-        <span style="font-size:13px">${msg}</span>
-      </div>
-    </div>`;
-  chat.appendChild(div);
-  scrollBottom();
-}
-
-function removeThinking() {
-  const t = document.getElementById('thinkingMsg');
-  if (t) t.remove();
-}
-
-function scrollBottom() {
-  const chat = document.getElementById('chat');
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function escapeHtml(text) {
-  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function formatText(text) {
-  // Code blocks
-  text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g,
-    '<pre><code>$2</code></pre>');
-  // Inline code
-  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // Bold
-  text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-  // Newlines
-  text = text.replace(/\n/g, '<br>');
-  return text;
-}
-
-function playAudio(id) {
-  if (currentAudio && !currentAudio.paused) {
-    currentAudio.pause();
-    currentAudio.currentTime = 0;
   }
-  const audio = document.getElementById(id);
-  if (audio) {
-    currentAudio = audio;
-    audio.play();
-  }
-}
-
-function autoPlayAudio(base64) {
-  const audio = new Audio('data:audio/mp3;base64,' + base64);
-  currentAudio = audio;
-  audio.play().catch(() => {});
-}
-
-function copyText(btn, encodedText) {
-  navigator.clipboard.writeText(decodeURIComponent(encodedText));
-  btn.textContent = '✅ Nusxalandi';
-  setTimeout(() => btn.textContent = '📋 Nusxa', 2000);
-}
-
-async function resetChat() {
-  await fetch(API_URL + '/reset', { method: 'POST' });
-  const chat = document.getElementById('chat');
-  chat.innerHTML = `
+  addMsg(`
     <div class="msg bot-msg">
       <div class="msg-avatar">🤖</div>
-      <div class="msg-content">
-        <div class="msg-text">Suhbat tozalandi! Yangi savol bering. 🔄</div>
+      <div>
+        <div class="msg-bubble">${fmt(txt)}</div>
+        ${audioHtml}
+        <div class="msg-foot">
+          <span class="msg-time">${t}</span>
+          <button class="msg-action" onclick="copyTxt(this,'${btoa(unescape(encodeURIComponent(txt)))}')">📋 Nusxa</button>
+        </div>
       </div>
-    </div>`;
+    </div>`);
 }
 
-async function uploadFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const formData = new FormData();
-  formData.append('file', file);
-  addUserMessage(`📎 Fayl yuklandi: ${file.name}`);
-  const resp = await fetch(API_URL + '/upload', { method: 'POST', body: formData });
-  const data = await resp.json();
-  if (data.success) {
-    addBotMessage(`✅ ${file.name} muvaffaqiyatli yuklandi! Endi u bilan ishlashingiz mumkin.`, null);
-  } else {
-    addBotMessage(`❌ Yuklash xatosi: ${data.error}`, null);
-  }
+function addThinking(msg){
+  removeThinking();
+  addMsg(`
+    <div class="msg bot-msg thinking" id="thinkEl">
+      <div class="msg-avatar">🤖</div>
+      <div class="msg-bubble">
+        <div class="dots"><span></span><span></span><span></span></div>
+        ${esc(msg)}
+      </div>
+    </div>`);
+}
+function removeThinking(){ document.getElementById('thinkEl')?.remove(); }
+
+function addMsg(html){
+  const c = document.getElementById('chat');
+  c.insertAdjacentHTML('beforeend', html);
+  c.scrollTop = c.scrollHeight;
 }
 
-// Ovozli kirish
-function toggleMic() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert("Brauzeringiz ovozni qo\'llab-quvvatlamaydi. Chrome ishlatib ko\'ring.");
-    return;
-  }
-  if (isRecording) {
-    recognition.stop();
-    return;
-  }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+// Utilities
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(s){
+  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g,'<pre><code>$2</code></pre>');
+  s = s.replace(/`([^`]+)`/g,'<code>$1</code>');
+  s = s.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>');
+  s = s.replace(/\n/g,'<br>');
+  return s;
+}
+function copyTxt(btn, b64){
+  navigator.clipboard.writeText(decodeURIComponent(escape(atob(b64))));
+  btn.textContent='✅'; setTimeout(()=>btn.textContent='📋 Nusxa',2000);
+}
+function playAudio(id){
+  curAudio?.pause();
+  const a = document.getElementById(id);
+  if(a){ curAudio=a; a.play(); }
+}
+function autoPlay(b64){
+  if(!document.getElementById('ttsToggle').checked) return;
+  const a = new Audio('data:audio/mp3;base64,'+b64);
+  curAudio=a; a.play().catch(()=>{});
+}
+
+// Reset
+async function resetChat(){
+  await fetch(API+'/reset',{method:'POST'});
+  const c = document.getElementById('chat');
+  c.innerHTML='';
+  addMsg(`<div class="msg bot-msg">
+    <div class="msg-avatar">🤖</div>
+    <div><div class="msg-bubble">Suhbat tozalandi! Yangi buyruq bering. 🔄</div></div>
+  </div>`);
+}
+
+// Upload
+async function uploadFile(inp){
+  const f = inp.files[0]; if(!f) return;
+  addUser('📎 Fayl yuklandi: '+f.name);
+  const fd = new FormData(); fd.append('file',f);
+  const r = await fetch(API+'/upload',{method:'POST',body:fd});
+  const d = await r.json();
+  addBot(d.success ? `✅ **${f.name}** muvaffaqiyatli yuklandi!\nEndi u bilan ishlashingiz mumkin.` : `❌ Xato: ${d.error}`, null, null);
+}
+
+// Quick commands
+function useCmd(el){
+  const m = {
+    '🌤️ Ob-havo':'Toshkentda bugun ob-havo qanday?',
+    '📁 Fayllarni ko\'rsat':'Workspace papkasidagi fayllarni ko\'rsat',
+    '📺 Motivatsiya video':'YouTube da motivatsiya uchun video qo\'y',
+    '💻 Sistema ma\'lumoti':'Kompyuter haqida ma\'lumot ber',
+    '📱 Telegram xabarlar':'Telegramdagi oxirgi xabarlarimni ko\'rsat',
+    '🎵 Musiqa qo\'y':'YouTube da o\'zbek musiqasini qo\'y'
+  };
+  document.getElementById('msgInput').value = m[el.textContent] || el.textContent;
+  document.getElementById('msgInput').focus();
+}
+
+// Mic
+function toggleMic(){
+  const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ alert("Brauzeringiz ovozni qo'llab-quvvatlamaydi. Chrome ishlating."); return; }
+  if(isRec){ recognition?.stop(); return; }
   recognition = new SR();
-  recognition.lang = 'uz-UZ';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  recognition.onstart = () => {
-    isRecording = true;
-    document.getElementById('micBtn').className = 'recording';
-    document.getElementById('micBtn').textContent = '🔴';
-  };
-  recognition.onresult = (e) => {
-    const transcript = e.results[0][0].transcript;
-    document.getElementById('msgInput').value = transcript;
-    sendMessage();
-  };
-  recognition.onend = () => {
-    isRecording = false;
-    document.getElementById('micBtn').className = '';
-    document.getElementById('micBtn').textContent = '🎤';
-  };
-  recognition.onerror = (e) => {
-    isRecording = false;
-    document.getElementById('micBtn').textContent = '🎤';
-    if (e.error !== 'no-speech') console.error('STT xato:', e.error);
-  };
+  recognition.lang='uz-UZ';
+  recognition.onstart=()=>{ isRec=true; document.getElementById('micBtn').className='ico-btn recording'; };
+  recognition.onresult=e=>{ document.getElementById('msgInput').value=e.results[0][0].transcript; sendMessage(); };
+  recognition.onend=()=>{ isRec=false; document.getElementById('micBtn').className='ico-btn'; document.getElementById('micBtn').textContent='🎤'; };
+  recognition.onerror=()=>{ isRec=false; document.getElementById('micBtn').className='ico-btn'; };
   recognition.start();
 }
 
-// Ishga tushirish
 connect();
 document.getElementById('msgInput').focus();
 </script>
+</body>
+</html>
