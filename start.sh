@@ -47,6 +47,20 @@ python3 -m playwright install chromium 2>/dev/null && echo "    [OK] Playwright 
 echo "[4/4] Tekshirilmoqda..."
 python3 -c "import fastapi, uvicorn, aiofiles, google.generativeai, gtts, psutil, dotenv; print('[OK] Barcha paketlar tayyor!')" 2>/dev/null || echo "[OGOHLANTIRISH] Ayrim paketlar yuklanmagan"
 
+# Node.js tekshirish (Remotion uchun)
+echo ""
+echo "[Node.js] Tekshirilmoqda..."
+if command -v node &>/dev/null; then
+    NODE_VER=$(node --version)
+    echo "[OK] Node.js $NODE_VER topildi"
+    echo "[Node] Remotion o'rnatilmoqda..."
+    npm install -g @remotion/cli --silent 2>/dev/null && echo "[OK] Remotion tayyor!" || echo "[SKIP] Remotion o'rnatilmadi"
+else
+    echo "[OGOHLANTIRISH] Node.js topilmadi!"
+    echo "  Remotion video render uchun kerak: https://nodejs.org"
+    echo "  Jarvis Node.js siz ham ishlaydi, faqat video render bo'lmaydi."
+fi
+
 mkdir -p workspace memory
 
 echo ""

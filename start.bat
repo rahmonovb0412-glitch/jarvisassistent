@@ -56,6 +56,23 @@ if errorlevel 1 (
     echo [OGOHLANTIRISH] Ayrim paketlar yuklanmagan bo'lishi mumkin
 )
 
+:: Node.js tekshirish (Remotion uchun)
+echo [Node.js] Tekshirilmoqda...
+node --version >nul 2>&1
+if errorlevel 1 (
+    echo [OGOHLANTIRISH] Node.js topilmadi!
+    echo   Remotion video render ishlashi uchun Node.js kerak.
+    echo   https://nodejs.org dan yuklab o'rnating ^(LTS versiya^)
+    echo   Jarvis Node.js siz ham ishlaveradi, faqat video render bo'lmaydi.
+    echo.
+) else (
+    for /f "tokens=*" %%v in ('node --version') do echo [OK] Node.js %%v topildi
+    :: npx va remotion o'rnatish
+    echo [Node] Remotion o'rnatilmoqda...
+    npm install -g @remotion/cli >nul 2>&1
+    echo [OK] Remotion tayyor!
+)
+
 :: workspace papkasi yaratish
 if not exist "workspace" mkdir workspace
 if not exist "memory" mkdir memory

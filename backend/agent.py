@@ -27,6 +27,10 @@ from tools.browser_tools import (
     browser_click_and_type
 )
 from tools.telegram_tools import get_messages, send_message, list_chats
+from tools.remotion_tools import (
+    render_text_video, render_slideshow,
+    open_remotion_studio, list_rendered_videos
+)
 
 SYSTEM_PROMPT = """Sen Jarvis — aqlli va qobiliyatli O'zbek AI agentisin.
 
@@ -59,7 +63,10 @@ MUHIM ESLATMALAR:
 - Saytda harakatlanish kerak bo'lsa: browser_goto ishlat
 - YouTube videoni haqiqiy o'ynatish: browser_youtube_play ishlat
 - Sahifa screenshot: browser_screenshot ishlat
-- Google/YouTube qidiruv natijalarini olish: browser_search_and_get ishlat"""
+- Google/YouTube qidiruv natijalarini olish: browser_search_and_get ishlat
+- Video render qilish: render_text_video ishlat
+- Slayd video: render_slideshow ishlat
+- Remotion Studio ochish: open_remotion_studio ishlat"""
 
 
 
@@ -266,6 +273,39 @@ TOOL_DECLARATIONS = [genai.protos.Tool(function_declarations=[
         parameters=_obj({"limit": _int("Ko'rsatiladigan chat soni (standart: 20)")})
     ),
 
+    # ── REMOTION VIDEO RENDER ─────────────────────────────────────────────────
+    genai.protos.FunctionDeclaration(
+        name="render_text_video",
+        description="Matn bilan professional video render qiladi (MP4). Taqdimot, reklama, motivatsiya videolari uchun.",
+        parameters=_obj({
+            "text":             _str("Videoda ko'rsatiladigan matn"),
+            "output_filename":  _str("Fayl nomi (masalan: video.mp4)"),
+            "bg_color":         _str("Fon rangi hex formatda (masalan: #0a0a0f)"),
+            "text_color":       _str("Matn rangi hex formatda (masalan: #4f8ef7)"),
+            "duration_seconds": _int("Video davomiyligi soniyalarda (standart: 5)"),
+            "fps":              _int("Kadrlar soni (standart: 30)")
+        }, ["text"])
+    ),
+    genai.protos.FunctionDeclaration(
+        name="render_slideshow",
+        description="Bir necha slayddan iborat video yaratadi",
+        parameters=_obj({
+            "slides":           _str("Slaydlar ro'yxati JSON formatda: [{\"text\":\"...\", \"bg_color\":\"#...\"}]"),
+            "output_filename":  _str("Fayl nomi (masalan: slideshow.mp4)"),
+            "slide_duration":   _int("Har bir slayd davomiyligi soniyalarda (standart: 3)")
+        }, ["slides"])
+    ),
+    genai.protos.FunctionDeclaration(
+        name="open_remotion_studio",
+        description="Remotion Studio ni ochadi — videoni vizual tahrirlash uchun brauzer interfeysi",
+        parameters=_obj({})
+    ),
+    genai.protos.FunctionDeclaration(
+        name="list_rendered_videos",
+        description="Workspace da render qilingan barcha videolar ro'yxatini ko'rsatadi",
+        parameters=_obj({})
+    ),
+
 ])]
 
 
@@ -313,6 +353,11 @@ TOOL_MAP = {
     "get_messages": get_messages,
     "send_message": send_message,
     "list_chats": list_chats,
+    # Remotion video render
+    "render_text_video":    render_text_video,
+    "render_slideshow":     render_slideshow,
+    "open_remotion_studio": open_remotion_studio,
+    "list_rendered_videos": list_rendered_videos,
 }
 
 
@@ -391,6 +436,10 @@ class JarvisAgent:
                         "browser_search_and_get": "🔍 Brauzer qidiruvi bajarilmoqda...",
                         "browser_youtube_play": "▶️ YouTube video o'ynatilmoqda...",
                         "browser_click_and_type": "⌨️ Brauzerda matn yozilmoqda...",
+                        "render_text_video":    "🎬 Video render qilinmoqda...",
+                        "render_slideshow":     "🎞️ Slaydshow render qilinmoqda...",
+                        "open_remotion_studio": "🎨 Remotion Studio ochilmoqda...",
+                        "list_rendered_videos": "📹 Videolar ro'yxati olinmoqda...",
                     }
                     label = step_labels.get(func_name, f"🔧 {func_name} bajarilmoqda...")
                     await on_step(label)
