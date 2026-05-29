@@ -41,6 +41,14 @@ pip install pydantic==2.7.4 -q
 pip install Pillow==10.3.0 -q
 pip install Telethon==1.36.0 -q
 pip install SpeechRecognition==3.10.4 -q
+pip install playwright==1.44.0 -q
+
+echo [3.5/4] Playwright brauzer o'rnatilmoqda (bir marta)...
+playwright install chromium 2>nul
+if errorlevel 1 (
+    python -m playwright install chromium 2>nul
+)
+echo     [OK] Playwright tayyor!
 
 echo [4/4] Tekshirilmoqda...
 python -c "import fastapi, uvicorn, aiofiles, google.generativeai, gtts, psutil, dotenv; print('[OK] Barcha paketlar tayyor!')"

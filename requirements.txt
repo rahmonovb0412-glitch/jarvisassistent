@@ -35,3 +35,7 @@ Telethon==1.36.0
 
 # ─── OVOZLI KIRISH (ixtiyoriy) ────────────────────────────
 SpeechRecognition==3.10.4
+
+# ─── BROWSER AUTOMATION ────────────────────────────────────
+# pip install playwright && playwright install chromium
+playwright==1.44.0

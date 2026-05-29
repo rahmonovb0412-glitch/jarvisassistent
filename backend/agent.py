@@ -22,7 +22,9 @@ from tools.web_tools import search_web, fetch_url
 from tools.weather_tools import get_weather
 from tools.browser_tools import (
     open_website, search_youtube, search_youtube_video,
-    play_youtube_music, open_instagram, search_google, open_telegram_web
+    play_youtube_music, open_instagram, search_google, open_telegram_web,
+    browser_goto, browser_screenshot, browser_search_and_get, browser_youtube_play,
+    browser_click_and_type
 )
 from tools.telegram_tools import get_messages, send_message, list_chats
 
@@ -53,7 +55,11 @@ MUHIM ESLATMALAR:
 - YouTube/musiqa/kino so'ralganda: search_youtube_video yoki play_youtube_music ishlat
 - Instagram so'ralganda: open_instagram ishlat
 - Telegram xabar o'qish/yuborish: get_messages / send_message ishlat
-- Sayt ochish: open_website ishlat"""
+- Sayt ochish: open_website ishlat
+- Saytda harakatlanish kerak bo'lsa: browser_goto ishlat
+- YouTube videoni haqiqiy o'ynatish: browser_youtube_play ishlat
+- Sahifa screenshot: browser_screenshot ishlat
+- Google/YouTube qidiruv natijalarini olish: browser_search_and_get ishlat"""
 
 
 
@@ -206,6 +212,43 @@ TOOL_DECLARATIONS = [genai.protos.Tool(function_declarations=[
         parameters=_obj({})
     ),
 
+    # ── PLAYWRIGHT BROWSER AUTOMATION ─────────────────────────────────────────
+    genai.protos.FunctionDeclaration(
+        name="browser_goto",
+        description="Playwright bilan berilgan URL ga kiradi, sahifa mazmunini qaytaradi. Saytda haqiqiy kirish kerak bo'lganda ishlat.",
+        parameters=_obj({
+            "url": _str("To'liq URL (https://...)"),
+            "wait_seconds": _int("Sahifa yuklangandan keyin kutish vaqti (standart: 3)")
+        }, ["url"])
+    ),
+    genai.protos.FunctionDeclaration(
+        name="browser_screenshot",
+        description="Sahifaning screenshot ini oladi va workspace ga saqlaydi",
+        parameters=_obj({"url": _str("Screenshot olinadigan sahifa URL")}, ["url"])
+    ),
+    genai.protos.FunctionDeclaration(
+        name="browser_search_and_get",
+        description="Google yoki YouTube da qidiradi, natijalarni qaytaradi va brauzerda ochadi",
+        parameters=_obj({
+            "query": _str("Qidiruv so'rovi"),
+            "engine": _str("Qidiruv tizimi: google yoki youtube (standart: google)")
+        }, ["query"])
+    ),
+    genai.protos.FunctionDeclaration(
+        name="browser_youtube_play",
+        description="YouTube da video topadi va birinchi natijani haqiqiy o'ynatadi (brauzer ochilib video boshlanadi)",
+        parameters=_obj({"query": _str("Video, qo'shiq yoki mavzu nomi")}, ["query"])
+    ),
+    genai.protos.FunctionDeclaration(
+        name="browser_click_and_type",
+        description="Saytdagi input maydoniga bosib matn yozadi (forma to'ldirish uchun)",
+        parameters=_obj({
+            "url": _str("Sahifa URL"),
+            "selector": _str("CSS selector (masalan: input[name=q], #search)"),
+            "text": _str("Yoziladigan matn")
+        }, ["url", "selector", "text"])
+    ),
+
     # ── TELEGRAM TOOLLARI ─────────────────────────────────────────────────────
     genai.protos.FunctionDeclaration(
         name="get_messages",
@@ -260,6 +303,12 @@ TOOL_MAP = {
     "open_instagram": open_instagram,
     "search_google": search_google,
     "open_telegram_web": open_telegram_web,
+    # Playwright browser automation
+    "browser_goto": browser_goto,
+    "browser_screenshot": browser_screenshot,
+    "browser_search_and_get": browser_search_and_get,
+    "browser_youtube_play": browser_youtube_play,
+    "browser_click_and_type": browser_click_and_type,
     # Telegram
     "get_messages": get_messages,
     "send_message": send_message,
@@ -337,6 +386,11 @@ class JarvisAgent:
                         "install_package": "📦 Paket o'rnatilmoqda...",
                         "search_web": "🔍 Internet qidirilmoqda...",
                         "get_system_info": "💻 Sistema ma'lumoti olinmoqda...",
+                        "browser_goto": "🌐 Brauzer sahifasi ochilmoqda...",
+                        "browser_screenshot": "📸 Screenshot olinmoqda...",
+                        "browser_search_and_get": "🔍 Brauzer qidiruvi bajarilmoqda...",
+                        "browser_youtube_play": "▶️ YouTube video o'ynatilmoqda...",
+                        "browser_click_and_type": "⌨️ Brauzerda matn yozilmoqda...",
                     }
                     label = step_labels.get(func_name, f"🔧 {func_name} bajarilmoqda...")
                     await on_step(label)

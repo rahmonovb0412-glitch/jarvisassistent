@@ -39,6 +39,10 @@ pip3 install pydantic==2.7.4 -q
 pip3 install Pillow==10.3.0 -q
 pip3 install Telethon==1.36.0 -q
 pip3 install SpeechRecognition==3.10.4 -q
+pip3 install playwright==1.44.0 -q
+
+echo "[3.5/4] Playwright brauzer o'rnatilmoqda (bir marta)..."
+python3 -m playwright install chromium 2>/dev/null && echo "    [OK] Playwright tayyor!" || echo "    [SKIP] Playwright o'rnatilmadi (ixtiyoriy)"
 
 echo "[4/4] Tekshirilmoqda..."
 python3 -c "import fastapi, uvicorn, aiofiles, google.generativeai, gtts, psutil, dotenv; print('[OK] Barcha paketlar tayyor!')" 2>/dev/null || echo "[OGOHLANTIRISH] Ayrim paketlar yuklanmagan"
